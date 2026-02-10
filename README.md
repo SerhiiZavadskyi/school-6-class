@@ -1,3 +1,3 @@
 # 6 class
 
-- (Коло ЦИЛІНДР. КОНУС. КУЛЯ)[]
+[📐 Розділ 3. Коло. Круг. Циліндр](https://serhiizavadskyi.github.io/school-6-class/circle-cylinder-cone.html)
