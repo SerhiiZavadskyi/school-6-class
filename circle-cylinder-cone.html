@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="uk">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Геометрична Лабораторія: 6 Клас</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+		<style>
+			body {
+				font-family: "Nunito", sans-serif;
+			}
+
+			/* Custom scrollbar for clean look */
+			::-webkit-scrollbar {
+				width: 8px;
+			}
+			::-webkit-scrollbar-track {
+				background: #f1f1f1;
+			}
+			::-webkit-scrollbar-thumb {
+				background: #888;
+				border-radius: 4px;
+			}
+			::-webkit-scrollbar-thumb:hover {
+				background: #555;
+			}
+
+			/* Chart Container Specifics */
+			.chart-container {
+				position: relative;
+				width: 100%;
+				max-width: 600px;
+				margin-left: auto;
+				margin-right: auto;
+				height: 350px;
+				max-height: 400px;
+			}
+
+			/* Geometric Shapes via CSS */
+			.css-circle {
+				transition: all 0.3s ease;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				position: relative;
+			}
+
+			.radius-line {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				height: 2px;
+				background-color: #ef4444; /* red-500 */
+				transform-origin: left;
+				transition: width 0.3s ease;
+			}
+
+			/* 3D Shape simulations using CSS gradients */
+			.shape-cylinder {
+				width: 60px;
+				height: 100px;
+				background: linear-gradient(90deg, #d1d5db 0%, #f3f4f6 50%, #9ca3af 100%);
+				border-radius: 10px / 20px;
+				position: relative;
+			}
+			.shape-cylinder::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 20px;
+				background: #e5e7eb;
+				border-radius: 50%;
+				border: 1px solid #9ca3af;
+			}
+			.shape-cylinder::after {
+				content: "";
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				width: 100%;
+				height: 20px;
+				background: #9ca3af;
+				border-radius: 50%;
+			}
+
+			.shape-cone {
+				width: 0;
+				height: 0;
+				border-left: 40px solid transparent;
+				border-right: 40px solid transparent;
+				border-bottom: 100px solid #d1d5db;
+				border-bottom-left-radius: 50% 10px;
+				border-bottom-right-radius: 50% 10px;
+				position: relative;
+			}
+
+			.shape-sphere {
+				width: 80px;
+				height: 80px;
+				border-radius: 50%;
+				background: radial-gradient(circle at 30% 30%, #f3f4f6, #9ca3af, #4b5563);
+				box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+			}
+
+			/* Navigation Active State */
+			.nav-item.active {
+				background-color: #e0e7ff; /* indigo-100 */
+				color: #4338ca; /* indigo-700 */
+				border-right: 4px solid #4338ca;
+			}
+		</style>
+		<!-- Chosen Palette: Warm Neutrals & Cosmic Indigo -->
+		<!-- Application Structure Plan: 
+         The app uses a 'Mission Control' dashboard metaphor to engage 6th graders.
+         1. Sidebar Navigation: Persistent access to 4 key modules (Theory/Circle, Charts, 3D Shapes, Quiz).
+         2. Main View: Dynamic content area.
+         - 'Orbital Lab' (Circle/Disk): Interactive slider to visualize relationship between Radius, Diameter, Circumference, and Area.
+         - 'Data Center' (Charts): A playground to input data and toggle between Bar and Pie charts to understand their use cases.
+         - 'Hangar' (3D Shapes): Cards with visual representations and definitions.
+         - 'Simulator' (Quiz): Gamified check of knowledge.
+         Rationale: This structure breaks dense textbook theory into bite-sized, interactive experiments, fostering "learning by doing".
+    -->
+		<!-- Visualization & Content Choices:
+         - Circle/Disk: CSS-based dynamic circle. Goal: Visualize r vs d. Interaction: Slider. Justification: Immediate visual feedback is better than static formulas.
+         - Charts: Chart.js. Goal: Show difference between "parts of whole" (Pie) and "quantities" (Bar). Interaction: Toggle chart type + Add data.
+         - 3D Shapes: CSS-styled divs. Goal: Recognize shapes. No SVG used as requested.
+         - Formulas: Displayed clearly with dynamic number substitution.
+    -->
+		<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+	</head>
+	<body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex flex-col md:flex-row">
+		<!-- Mobile Header -->
+		<div class="md:hidden bg-indigo-600 text-white p-4 flex justify-between items-center shadow-md z-20">
+			<h1 class="text-xl font-bold">Гео-Лаб 6</h1>
+			<button id="mobile-menu-btn" class="text-white focus:outline-none text-2xl">☰</button>
+		</div>
+
+		<!-- Sidebar Navigation -->
+		<nav
+			id="sidebar"
+			class="bg-white w-full md:w-64 flex-shrink-0 border-r border-slate-200 flex flex-col h-full absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-10 shadow-lg md:shadow-none"
+		>
+			<div class="p-6 border-b border-slate-100 hidden md:block">
+				<h1 class="text-2xl font-bold text-indigo-700">
+					Гео-Лаб <span class="text-sm font-normal text-slate-500">6 Клас</span>
+				</h1>
+				<p class="text-xs text-slate-400 mt-1">Інтерактивний помічник</p>
+			</div>
+
+			<div class="flex-1 overflow-y-auto py-4">
+				<ul class="space-y-1">
+					<li>
+						<button
+							onclick="app.navigate('intro')"
+							class="nav-item w-full text-left px-6 py-3 hover:bg-slate-50 transition-colors active"
+							data-target="intro"
+						>
+							🏠 Головна База
+						</button>
+					</li>
+					<li>
+						<button
+							onclick="app.navigate('circle')"
+							class="nav-item w-full text-left px-6 py-3 hover:bg-slate-50 transition-colors"
+							data-target="circle"
+						>
+							🔵 Коло та Круг
+						</button>
+					</li>
+					<li>
+						<button
+							onclick="app.navigate('charts')"
+							class="nav-item w-full text-left px-6 py-3 hover:bg-slate-50 transition-colors"
+							data-target="charts"
+						>
+							📊 Центр Даних
+						</button>
+					</li>
+					<li>
+						<button
+							onclick="app.navigate('shapes')"
+							class="nav-item w-full text-left px-6 py-3 hover:bg-slate-50 transition-colors"
+							data-target="shapes"
+						>
+							🍦 Тіла Обертання
+						</button>
+					</li>
+					<li>
+						<button
+							onclick="app.navigate('quiz')"
+							class="nav-item w-full text-left px-6 py-3 hover:bg-slate-50 transition-colors"
+							data-target="quiz"
+						>
+							🎮 Тренажер
+						</button>
+					</li>
+				</ul>
+			</div>
+
+			<div class="p-4 border-t border-slate-100 bg-slate-50">
+				<div class="text-xs text-slate-500 text-center">НУШ Математика • 6 Клас</div>
+			</div>
+		</nav>
+
+		<!-- Main Content Area -->
+		<main class="flex-1 overflow-y-auto relative bg-slate-50 p-4 md:p-8" id="main-content">
+			<!-- SECTION: INTRO -->
+			<section id="intro-section" class="max-w-4xl mx-auto space-y-8 animate-fade-in">
+				<div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+					<h2 class="text-3xl font-bold text-slate-800 mb-4">Вітаємо в Геометричній Лабораторії! 🚀</h2>
+					<p class="text-lg text-slate-600 mb-6">
+						Сьогодні ми перетворимо сухі формули на живі експерименти. Цей додаток допоможе тобі зрозуміти
+						теми з підручника (параграфи 24-27) не через зубріння, а через дослідження.
+					</p>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div
+							onclick="app.navigate('circle')"
+							class="cursor-pointer group bg-indigo-50 hover:bg-indigo-100 p-6 rounded-xl transition-all border border-indigo-100"
+						>
+							<div class="text-4xl mb-2">🔵</div>
+							<h3 class="font-bold text-indigo-900 group-hover:text-indigo-700">Коло та Круг</h3>
+							<p class="text-sm text-indigo-700">
+								Дізнайся, чим піца відрізняється від обруча, та як виміряти їх.
+							</p>
+						</div>
+
+						<div
+							onclick="app.navigate('charts')"
+							class="cursor-pointer group bg-emerald-50 hover:bg-emerald-100 p-6 rounded-xl transition-all border border-emerald-100"
+						>
+							<div class="text-4xl mb-2">📊</div>
+							<h3 class="font-bold text-emerald-900 group-hover:text-emerald-700">Діаграми</h3>
+							<p class="text-sm text-emerald-700">Навчися читати дані та будувати графіки як аналітик.</p>
+						</div>
+
+						<div
+							onclick="app.navigate('shapes')"
+							class="cursor-pointer group bg-orange-50 hover:bg-orange-100 p-6 rounded-xl transition-all border border-orange-100"
+						>
+							<div class="text-4xl mb-2">🍦</div>
+							<h3 class="font-bold text-orange-900 group-hover:text-orange-700">3D Фігури</h3>
+							<p class="text-sm text-orange-700">Циліндри, конуси та кулі навколо нас.</p>
+						</div>
+
+						<div
+							onclick="app.navigate('quiz')"
+							class="cursor-pointer group bg-rose-50 hover:bg-rose-100 p-6 rounded-xl transition-all border border-rose-100"
+						>
+							<div class="text-4xl mb-2">🎯</div>
+							<h3 class="font-bold text-rose-900 group-hover:text-rose-700">Квест</h3>
+							<p class="text-sm text-rose-700">Перевір свої сили та отримай звання Майстра.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- SECTION: CIRCLE & DISK -->
+			<section id="circle-section" class="max-w-5xl mx-auto space-y-6 hidden">
+				<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+					<h2 class="text-2xl font-bold text-indigo-800 mb-2">Лабораторія Орбіти (Коло та Круг)</h2>
+					<p class="text-slate-600 mb-4">
+						Тут ти можеш експериментувати з радіусом. Змінюй розмір "орбіти" і спостерігай, як автоматично
+						змінюються довжина шляху (Коло) та площа території всередині (Круг). Запам'ятай:
+						<span class="font-bold text-indigo-600">Коло</span> — це межа (лінія), а
+						<span class="font-bold text-indigo-600">Круг</span> — це все, що всередині.
+					</p>
+
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+						<!-- Controls & Stats -->
+						<div class="space-y-6">
+							<div class="bg-indigo-50 p-4 rounded-lg">
+								<label class="block text-sm font-semibold text-indigo-900 mb-2"
+									>Налаштуй Радіус (r):
+									<span id="radius-val" class="text-xl font-bold text-indigo-600">5</span> см</label
+								>
+								<input
+									type="range"
+									id="radius-slider"
+									min="1"
+									max="15"
+									value="5"
+									step="0.5"
+									class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+								/>
+								<div class="flex justify-between text-xs text-indigo-400 mt-1">
+									<span>1 см</span>
+									<span>15 см</span>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-2 gap-4">
+								<div class="bg-white border border-slate-200 p-3 rounded-lg text-center">
+									<div class="text-xs text-slate-500 uppercase">Діаметр (d = 2r)</div>
+									<div id="diameter-display" class="text-xl font-bold text-slate-800">10</div>
+									<div class="text-xs text-slate-400">см</div>
+								</div>
+								<div class="bg-white border border-slate-200 p-3 rounded-lg text-center">
+									<div class="text-xs text-slate-500 uppercase">Число Пі (π)</div>
+									<div class="text-xl font-bold text-slate-800">3.14</div>
+									<div class="text-xs text-slate-400">константа</div>
+								</div>
+							</div>
+
+							<div class="space-y-3">
+								<div class="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+									<h4 class="font-bold text-blue-900 text-sm">Довжина Кола (Межа)</h4>
+									<p class="text-xs text-blue-700 font-mono mb-1">C = 2 · π · r</p>
+									<p class="text-lg font-bold text-blue-800">
+										C ≈ <span id="circumference-display">31.40</span> см
+									</p>
+								</div>
+								<div class="bg-amber-50 p-3 rounded-lg border-l-4 border-amber-500">
+									<h4 class="font-bold text-amber-900 text-sm">Площа Круга (Територія)</h4>
+									<p class="text-xs text-amber-700 font-mono mb-1">S = π · r²</p>
+									<p class="text-lg font-bold text-amber-800">
+										S ≈ <span id="area-display">78.50</span> см²
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Visualizer -->
+						<div
+							class="flex flex-col items-center justify-center bg-slate-100 h-96 rounded-xl relative overflow-hidden"
+						>
+							<div
+								class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10"
+								style="
+									background-image: radial-gradient(#94a3b8 1px, transparent 1px);
+									background-size: 20px 20px;
+								"
+							></div>
+
+							<!-- The Circle/Disk -->
+							<div
+								id="visual-circle"
+								class="css-circle border-4 border-blue-500 bg-amber-200 bg-opacity-50"
+							>
+								<!-- Center Point -->
+								<div class="w-2 h-2 bg-slate-800 rounded-full z-10"></div>
+								<!-- Radius Line -->
+								<div id="visual-radius-line" class="radius-line"></div>
+								<!-- Labels -->
+								<span class="absolute text-[10px] font-bold text-red-600 -translate-y-3 translate-x-4"
+									>r</span
+								>
+								<span class="absolute text-[10px] font-bold text-slate-800 -translate-y-5">O</span>
+							</div>
+
+							<div class="mt-8 flex gap-4 text-xs font-semibold">
+								<div class="flex items-center gap-2">
+									<span class="w-3 h-3 rounded-full border-2 border-blue-500 bg-transparent"></span>
+									Коло (синя лінія)
+								</div>
+								<div class="flex items-center gap-2">
+									<span class="w-3 h-3 rounded-full bg-amber-200 bg-opacity-50"></span> Круг (жовте
+									заповнення)
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- SECTION: CHARTS -->
+			<section id="charts-section" class="max-w-5xl mx-auto space-y-6 hidden">
+				<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+					<h2 class="text-2xl font-bold text-indigo-800 mb-2">Центр Даних (Діаграми)</h2>
+					<p class="text-slate-600 mb-6">
+						Діаграми перетворюють нудні списки чисел на зрозумілі картинки.
+						<span class="font-bold text-indigo-600">Стовпчаста</span> діаграма показує "скільки в кого", а
+						<span class="font-bold text-indigo-600">Кругова</span> — "яку частину займає кожен". Спробуй
+						додати свої дані (наприклад, оцінки або кількість фруктів) і перемикай види діаграм.
+					</p>
+
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<!-- Controls -->
+						<div class="md:col-span-1 space-y-6">
+							<div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+								<h3 class="font-bold text-slate-700 mb-3">1. Введи дані</h3>
+								<div class="space-y-3">
+									<input
+										type="text"
+										id="chart-label"
+										placeholder="Назва (напр. Яблука)"
+										class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+									/>
+									<input
+										type="number"
+										id="chart-value"
+										placeholder="Кількість (напр. 10)"
+										class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+									/>
+									<button
+										onclick="app.addDataPoint()"
+										class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition font-semibold text-sm"
+									>
+										➕ Додати до графіку
+									</button>
+								</div>
+							</div>
+
+							<div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+								<h3 class="font-bold text-slate-700 mb-3">2. Обери тип</h3>
+								<div class="flex gap-2">
+									<button
+										onclick="app.setChartType('bar')"
+										id="btn-bar"
+										class="flex-1 py-2 rounded border border-indigo-200 bg-indigo-100 text-indigo-700 font-bold text-sm"
+									>
+										Стовпчаста
+									</button>
+									<button
+										onclick="app.setChartType('pie')"
+										id="btn-pie"
+										class="flex-1 py-2 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-bold text-sm"
+									>
+										Кругова
+									</button>
+								</div>
+							</div>
+
+							<div class="bg-white p-3 rounded border border-slate-200">
+								<h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Поточні Дані:</h4>
+								<ul id="data-list" class="text-sm space-y-1 max-h-32 overflow-y-auto">
+									<!-- Data items injected here -->
+								</ul>
+								<button
+									onclick="app.resetData()"
+									class="text-xs text-red-500 hover:text-red-700 mt-2 underline w-full text-right"
+								>
+									Очистити все
+								</button>
+							</div>
+						</div>
+
+						<!-- Chart Display -->
+						<div
+							class="md:col-span-2 bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center"
+						>
+							<div class="chart-container">
+								<canvas id="myChart"></canvas>
+							</div>
+							<p id="chart-hint" class="text-xs text-slate-400 mt-4 text-center italic">
+								Наведи на елементи графіка, щоб побачити точні числа.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- SECTION: SHAPES -->
+			<section id="shapes-section" class="max-w-5xl mx-auto space-y-6 hidden">
+				<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+					<h2 class="text-2xl font-bold text-indigo-800 mb-2">Ангар Фігур (Тіла Обертання)</h2>
+					<p class="text-slate-600 mb-6">
+						Ці фігури називаються "тілами обертання", бо їх можна утворити, швидко обертаючи плоску фігуру
+						навколо осі. Наведи на картки, щоб дізнатися більше.
+					</p>
+
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<!-- Cylinder -->
+						<div
+							class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow flex flex-col items-center text-center group"
+						>
+							<div class="h-32 flex items-center justify-center mb-4">
+								<div class="shape-cylinder transition-transform group-hover:scale-110"></div>
+							</div>
+							<h3 class="text-xl font-bold text-slate-800 mb-2">Циліндр</h3>
+							<p class="text-sm text-slate-600 mb-4">
+								Схожий на консервну банку. Має дві основи (круги) і прямокутну розгортку стінки.
+							</p>
+							<div
+								class="bg-white px-3 py-1 rounded-full text-xs font-mono text-indigo-600 border border-indigo-100"
+							>
+								Приклад: Чашка, Труба
+							</div>
+						</div>
+
+						<!-- Cone -->
+						<div
+							class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow flex flex-col items-center text-center group"
+						>
+							<div class="h-32 flex items-center justify-center mb-4">
+								<div class="shape-cone transition-transform group-hover:scale-110"></div>
+							</div>
+							<h3 class="text-xl font-bold text-slate-800 mb-2">Конус</h3>
+							<p class="text-sm text-slate-600 mb-4">
+								Схожий на ріжок морозива. Має одну основу (круг) і вершину.
+							</p>
+							<div
+								class="bg-white px-3 py-1 rounded-full text-xs font-mono text-indigo-600 border border-indigo-100"
+							>
+								Приклад: Ковпак, Лійка
+							</div>
+						</div>
+
+						<!-- Sphere -->
+						<div
+							class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow flex flex-col items-center text-center group"
+						>
+							<div class="h-32 flex items-center justify-center mb-4">
+								<div class="shape-sphere transition-transform group-hover:scale-110"></div>
+							</div>
+							<h3 class="text-xl font-bold text-slate-800 mb-2">Куля</h3>
+							<p class="text-sm text-slate-600 mb-4">
+								Ідеально кругла з усіх боків. Всі точки поверхні на однаковій відстані від центру.
+							</p>
+							<div
+								class="bg-white px-3 py-1 rounded-full text-xs font-mono text-indigo-600 border border-indigo-100"
+							>
+								Приклад: М'яч, Планета
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- SECTION: QUIZ -->
+			<section id="quiz-section" class="max-w-3xl mx-auto space-y-6 hidden">
+				<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+					<div class="flex justify-between items-center mb-6">
+						<h2 class="text-2xl font-bold text-indigo-800">Математичний Квест</h2>
+						<span
+							id="score-display"
+							class="bg-indigo-100 text-indigo-800 px-4 py-1 rounded-full font-bold text-sm"
+							>Бали: 0 / 0</span
+						>
+					</div>
+
+					<div id="quiz-container" class="space-y-6">
+						<!-- Question 1 -->
+						<div class="quiz-item border-b border-slate-100 pb-6">
+							<p class="font-bold text-lg text-slate-800 mb-3">
+								1. Якщо радіус кола дорівнює 4 см, то який його діаметр?
+							</p>
+							<div class="space-y-2">
+								<button
+									onclick="app.checkAnswer(this, true)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									A. 8 см
+								</button>
+								<button
+									onclick="app.checkAnswer(this, false)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									B. 2 см
+								</button>
+								<button
+									onclick="app.checkAnswer(this, false)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									C. 16 см
+								</button>
+							</div>
+							<div class="feedback hidden mt-2 text-sm font-bold"></div>
+						</div>
+
+						<!-- Question 2 -->
+						<div class="quiz-item border-b border-slate-100 pb-6">
+							<p class="font-bold text-lg text-slate-800 mb-3">
+								2. Яку діаграму краще використати, щоб показати склад піци (частини)?
+							</p>
+							<div class="space-y-2">
+								<button
+									onclick="app.checkAnswer(this, false)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									A. Стовпчасту
+								</button>
+								<button
+									onclick="app.checkAnswer(this, true)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									B. Кругову
+								</button>
+								<button
+									onclick="app.checkAnswer(this, false)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									C. Лінійну
+								</button>
+							</div>
+							<div class="feedback hidden mt-2 text-sm font-bold"></div>
+						</div>
+
+						<!-- Question 3 -->
+						<div class="quiz-item pb-6">
+							<p class="font-bold text-lg text-slate-800 mb-3">3. Яка фігура має дві основи?</p>
+							<div class="space-y-2">
+								<button
+									onclick="app.checkAnswer(this, false)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									A. Конус
+								</button>
+								<button
+									onclick="app.checkAnswer(this, false)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									B. Куля
+								</button>
+								<button
+									onclick="app.checkAnswer(this, true)"
+									class="w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition"
+								>
+									C. Циліндр
+								</button>
+							</div>
+							<div class="feedback hidden mt-2 text-sm font-bold"></div>
+						</div>
+					</div>
+
+					<div class="mt-4 text-center">
+						<button onclick="app.resetQuiz()" class="text-indigo-600 font-bold hover:underline">
+							Почати заново
+						</button>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<script>
+			const app = {
+				state: {
+					currentSection: "intro",
+					radius: 5,
+					chartData: {
+						labels: ["Математика", "Укр. мова", "Фізкультура", "Мистецтво"],
+						data: [10, 8, 11, 12],
+					},
+					chartType: "bar", // 'bar' or 'pie'
+					chartInstance: null,
+					score: 0,
+					totalQuestions: 3,
+					answered: 0,
+				},
+
+				init: function () {
+					// Nav Listeners
+					document.getElementById("mobile-menu-btn").addEventListener("click", () => {
+						const sb = document.getElementById("sidebar");
+						sb.classList.toggle("-translate-x-full");
+					});
+
+					// Radius Slider Listener
+					const slider = document.getElementById("radius-slider");
+					slider.addEventListener("input", (e) => {
+						this.state.radius = parseFloat(e.target.value);
+						this.updateCircleCalc();
+					});
+
+					// Init modules
+					this.updateCircleCalc();
+					this.renderDataList();
+					this.initChart();
+				},
+
+				navigate: function (targetId) {
+					// Update State
+					this.state.currentSection = targetId;
+
+					// UI: Nav Active Class
+					document.querySelectorAll(".nav-item").forEach((btn) => {
+						if (btn.dataset.target === targetId) {
+							btn.classList.add("active");
+							btn.classList.remove("hover:bg-slate-50");
+						} else {
+							btn.classList.remove("active");
+							btn.classList.add("hover:bg-slate-50");
+						}
+					});
+
+					// UI: Mobile Menu Close
+					if (window.innerWidth < 768) {
+						document.getElementById("sidebar").classList.add("-translate-x-full");
+					}
+
+					// UI: Show/Hide Sections
+					const sections = ["intro", "circle", "charts", "shapes", "quiz"];
+					sections.forEach((sec) => {
+						const el = document.getElementById(sec + "-section");
+						if (sec === targetId) {
+							el.classList.remove("hidden");
+							el.classList.add("animate-fade-in");
+						} else {
+							el.classList.add("hidden");
+							el.classList.remove("animate-fade-in");
+						}
+					});
+				},
+
+				// --- MODULE: CIRCLE ---
+				updateCircleCalc: function () {
+					const r = this.state.radius;
+					const d = r * 2;
+					const C = (2 * Math.PI * r).toFixed(2);
+					const S = (Math.PI * r * r).toFixed(2);
+
+					// Update Text
+					document.getElementById("radius-val").innerText = r;
+					document.getElementById("diameter-display").innerText = d;
+					document.getElementById("circumference-display").innerText = C;
+					document.getElementById("area-display").innerText = S;
+
+					// Update Visual
+					const visual = document.getElementById("visual-circle");
+					const line = document.getElementById("visual-radius-line");
+
+					// Base size logic: 20px is unit size. Max display area approx 300px.
+					// r=1 -> 20px, r=15 -> 300px
+					const pixelSize = r * 20;
+					visual.style.width = pixelSize + "px";
+					visual.style.height = pixelSize + "px";
+					line.style.width = pixelSize / 2 + "px";
+				},
+
+				// --- MODULE: CHARTS ---
+				initChart: function () {
+					const ctx = document.getElementById("myChart").getContext("2d");
+
+					// Colors based on palette
+					const bgColors = [
+						"rgba(79, 70, 229, 0.7)", // Indigo
+						"rgba(16, 185, 129, 0.7)", // Emerald
+						"rgba(245, 158, 11, 0.7)", // Amber
+						"rgba(244, 63, 94, 0.7)", // Rose
+						"rgba(59, 130, 246, 0.7)", // Blue
+					];
+
+					const config = {
+						type: this.state.chartType,
+						data: {
+							labels: this.state.chartData.labels,
+							datasets: [
+								{
+									label: "Значення",
+									data: this.state.chartData.data,
+									backgroundColor: bgColors,
+									borderColor: bgColors.map((c) => c.replace("0.7", "1")),
+									borderWidth: 1,
+								},
+							],
+						},
+						options: {
+							responsive: true,
+							maintainAspectRatio: false,
+							plugins: {
+								legend: {
+									display: this.state.chartType === "pie",
+									position: "bottom",
+								},
+							},
+							scales: {
+								y: {
+									beginAtZero: true,
+									display: this.state.chartType === "bar",
+								},
+								x: {
+									display: this.state.chartType === "bar",
+								},
+							},
+						},
+					};
+
+					if (this.state.chartInstance) {
+						this.state.chartInstance.destroy();
+					}
+					this.state.chartInstance = new Chart(ctx, config);
+				},
+
+				setChartType: function (type) {
+					this.state.chartType = type;
+
+					// Update buttons UI
+					const btnBar = document.getElementById("btn-bar");
+					const btnPie = document.getElementById("btn-pie");
+
+					if (type === "bar") {
+						btnBar.className =
+							"flex-1 py-2 rounded border border-indigo-200 bg-indigo-100 text-indigo-700 font-bold text-sm";
+						btnPie.className =
+							"flex-1 py-2 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-bold text-sm";
+					} else {
+						btnPie.className =
+							"flex-1 py-2 rounded border border-indigo-200 bg-indigo-100 text-indigo-700 font-bold text-sm";
+						btnBar.className =
+							"flex-1 py-2 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-bold text-sm";
+					}
+
+					this.initChart();
+				},
+
+				addDataPoint: function () {
+					const labelIn = document.getElementById("chart-label");
+					const valueIn = document.getElementById("chart-value");
+
+					const label = labelIn.value.trim();
+					const value = parseFloat(valueIn.value);
+
+					if (label && !isNaN(value)) {
+						this.state.chartData.labels.push(label);
+						this.state.chartData.data.push(value);
+
+						labelIn.value = "";
+						valueIn.value = "";
+
+						this.renderDataList();
+						this.initChart();
+					}
+				},
+
+				resetData: function () {
+					this.state.chartData.labels = [];
+					this.state.chartData.data = [];
+					this.renderDataList();
+					this.initChart();
+				},
+
+				renderDataList: function () {
+					const list = document.getElementById("data-list");
+					list.innerHTML = "";
+
+					this.state.chartData.labels.forEach((lbl, idx) => {
+						const val = this.state.chartData.data[idx];
+						const li = document.createElement("li");
+						li.className = "flex justify-between border-b border-slate-100 pb-1";
+						li.innerHTML = `<span>${lbl}</span> <span class="font-bold text-indigo-600">${val}</span>`;
+						list.appendChild(li);
+					});
+				},
+
+				// --- MODULE: QUIZ ---
+				checkAnswer: function (btn, isCorrect) {
+					// Prevent multiple clicks on same question
+					const parent = btn.parentElement;
+					if (parent.dataset.answered === "true") return;
+					parent.dataset.answered = "true";
+
+					// Visual Feedback
+					const feedbackDiv = parent.nextElementSibling;
+					feedbackDiv.classList.remove("hidden");
+
+					if (isCorrect) {
+						btn.classList.remove("bg-slate-50", "hover:bg-slate-100");
+						btn.classList.add("bg-green-100", "border-green-300", "text-green-800");
+						feedbackDiv.innerText = "✅ Правильно! Молодець!";
+						feedbackDiv.classList.add("text-green-600");
+						this.state.score++;
+					} else {
+						btn.classList.remove("bg-slate-50", "hover:bg-slate-100");
+						btn.classList.add("bg-red-100", "border-red-300", "text-red-800");
+						feedbackDiv.innerText = "❌ На жаль, ні. Спробуй ще раз пізніше.";
+						feedbackDiv.classList.add("text-red-600");
+
+						// Highlight correct one
+						// (Simplified logic: In a real app we'd track index, here we just show feedback)
+					}
+
+					this.state.answered++;
+					this.updateScore();
+				},
+
+				updateScore: function () {
+					document.getElementById("score-display").innerText =
+						`Бали: ${this.state.score} / ${this.state.totalQuestions}`;
+				},
+
+				resetQuiz: function () {
+					this.state.score = 0;
+					this.state.answered = 0;
+					this.updateScore();
+
+					const items = document.querySelectorAll(".quiz-item");
+					items.forEach((item) => {
+						// Reset buttons
+						const buttons = item.querySelectorAll("button");
+						buttons.forEach((btn) => {
+							btn.className =
+								"w-full text-left px-4 py-3 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 transition";
+						});
+
+						// Reset container state
+						const btnContainer = item.querySelector(".space-y-2");
+						delete btnContainer.dataset.answered;
+
+						// Reset feedback
+						const fb = item.querySelector(".feedback");
+						fb.classList.add("hidden");
+						fb.className = "feedback hidden mt-2 text-sm font-bold";
+					});
+				},
+			};
+
+			// Boot
+			window.addEventListener("DOMContentLoaded", () => {
+				app.init();
+			});
+		</script>
+	</body>
+</html>
