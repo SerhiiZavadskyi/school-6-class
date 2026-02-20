@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="uk">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Магічна Кухня Мішаних Чисел</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<style>
+			@import url("https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap");
+
+			body {
+				font-family: "Comfortaa", cursive;
+				background: #fdf2f8;
+			}
+
+			.fraction-container {
+				display: inline-flex;
+				flex-direction: column;
+				vertical-align: middle;
+				align-items: center;
+				margin: 0 4px;
+			}
+
+			.fraction-line {
+				width: 100%;
+				height: 2px;
+				background: #4a5568;
+				margin: 2px 0;
+			}
+
+			.circle-slice {
+				stroke-dasharray: 100 100;
+				transition: all 0.5s ease;
+			}
+
+			.floating {
+				animation: float 3s ease-in-out infinite;
+			}
+
+			@keyframes float {
+				0% {
+					transform: translateY(0px);
+				}
+				50% {
+					transform: translateY(-10px);
+				}
+				100% {
+					transform: translateY(0px);
+				}
+			}
+		</style>
+	</head>
+	<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+		<div class="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-pink-200">
+			<!-- Header -->
+			<div class="bg-pink-500 p-6 text-white text-center relative">
+				<h1 class="text-3xl font-bold">🧙‍♂️ Магічна Кухня Мішаних Чисел</h1>
+				<p class="mt-2 opacity-90 text-lg">Готуй зілля, рахуючи правильні пропорції!</p>
+				<div
+					id="score-badge"
+					class="absolute top-4 right-4 bg-yellow-400 text-gray-800 px-4 py-1 rounded-full font-bold shadow-md"
+				>
+					Зібрано зірок: 0
+				</div>
+			</div>
+
+			<!-- Game Area -->
+			<div class="p-6 md:p-10">
+				<div id="quest-card" class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8 text-center">
+					<h2 class="text-xl text-blue-800 font-bold mb-4">Твоє завдання:</h2>
+					<div
+						id="problem-display"
+						class="text-4xl font-bold flex items-center justify-center gap-4 text-gray-800"
+					>
+						<!-- Problem will be injected here -->
+						Завантаження...
+					</div>
+				</div>
+
+				<!-- Visual Representation -->
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+					<div class="bg-orange-50 p-4 rounded-xl border border-orange-200">
+						<h3 class="text-center font-bold text-orange-700 mb-4">Візуальна допомога</h3>
+						<div id="visual-container" class="flex flex-wrap justify-center gap-4 min-h-[120px]">
+							<!-- Visual representation of numbers -->
+						</div>
+					</div>
+
+					<div class="flex flex-col justify-center gap-4">
+						<div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+							<h3 class="text-center font-bold text-gray-700 mb-4">Твоя відповідь</h3>
+							<div class="flex items-center justify-center gap-3">
+								<input
+									type="number"
+									id="ans-whole"
+									placeholder="Ціле"
+									class="w-20 p-3 text-2xl border-2 border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-center"
+								/>
+								<div class="fraction-container">
+									<input
+										type="number"
+										id="ans-num"
+										placeholder="Числ."
+										class="w-16 p-2 text-xl border-2 border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-center"
+									/>
+									<div class="fraction-line"></div>
+									<input
+										type="number"
+										id="ans-den"
+										placeholder="Знам."
+										class="w-16 p-2 text-xl border-2 border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-center"
+									/>
+								</div>
+							</div>
+						</div>
+						<button
+							id="check-btn"
+							class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl text-xl shadow-lg transform transition active:scale-95"
+						>
+							Перевірити страву! ✨
+						</button>
+					</div>
+				</div>
+
+				<!-- Feedback -->
+				<div id="feedback" class="hidden text-center p-4 rounded-xl text-lg font-bold"></div>
+
+				<div id="explanation" class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 text-gray-700 hidden">
+					<!-- Hint/Step-by-step logic -->
+				</div>
+			</div>
+		</div>
+
+		<!-- UI Modal for Win/Correct -->
+		<div
+			id="success-modal"
+			class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
+		>
+			<div class="bg-white p-8 rounded-3xl text-center max-w-sm w-full mx-4 transform transition-all">
+				<div class="text-6xl mb-4">🧪</div>
+				<h2 class="text-2xl font-bold text-gray-800 mb-2">Чудово!</h2>
+				<p class="text-gray-600 mb-6" id="success-msg">Зілля вийшло ідеальним!</p>
+				<button
+					id="next-btn"
+					class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg"
+				>
+					Наступний рівень
+				</button>
+			</div>
+		</div>
+
+		<script>
+			// Game State
+			let score = 0;
+			let currentProblem = {};
+			const commonDenominators = [2, 3, 4, 5, 6, 8, 10];
+
+			// Elements
+			const problemDisplay = document.getElementById("problem-display");
+			const visualContainer = document.getElementById("visual-container");
+			const feedback = document.getElementById("feedback");
+			const explanation = document.getElementById("explanation");
+			const checkBtn = document.getElementById("check-btn");
+			const nextBtn = document.getElementById("next-btn");
+			const successModal = document.getElementById("success-modal");
+			const scoreBadge = document.getElementById("score-badge");
+
+			const inputs = {
+				whole: document.getElementById("ans-whole"),
+				num: document.getElementById("ans-num"),
+				den: document.getElementById("ans-den"),
+			};
+
+			function generateProblem() {
+				const isAddition = Math.random() > 0.5;
+				const den = commonDenominators[Math.floor(Math.random() * commonDenominators.length)];
+
+				let w1, n1, w2, n2;
+
+				if (isAddition) {
+					w1 = Math.floor(Math.random() * 4) + 1;
+					n1 = Math.floor(Math.random() * (den - 1)) + 1;
+					w2 = Math.floor(Math.random() * 3) + 1;
+					n2 = Math.floor(Math.random() * (den - 1)) + 1;
+				} else {
+					// For subtraction, ensure first number is larger
+					w1 = Math.floor(Math.random() * 5) + 3;
+					n1 = Math.floor(Math.random() * (den - 1)) + 1;
+					w2 = Math.floor(Math.random() * (w1 - 1)) + 1;
+					n2 = Math.floor(Math.random() * (den - 1)) + 1;
+
+					// Allow cases where we need to "borrow"
+					// 30% chance n2 > n1
+					if (Math.random() < 0.3) {
+						const temp = n1;
+						n1 = Math.min(n1, n2);
+						n2 = Math.max(temp, n2);
+						if (n1 === n2 && n1 > 1) n1--;
+					}
+				}
+
+				currentProblem = { w1, n1, w2, n2, den, isAddition };
+				renderProblem();
+				renderVisuals();
+				clearInputs();
+				feedback.classList.add("hidden");
+				explanation.classList.add("hidden");
+			}
+
+			function createFractionHTML(w, n, d) {
+				return `
+                <div class="flex items-center">
+                    <span>${w}</span>
+                    <div class="fraction-container">
+                        <span>${n}</span>
+                        <div class="fraction-line"></div>
+                        <span>${d}</span>
+                    </div>
+                </div>
+            `;
+			}
+
+			function renderProblem() {
+				const p = currentProblem;
+				problemDisplay.innerHTML = `
+                ${createFractionHTML(p.w1, p.n1, p.den)}
+                <span class="text-pink-500">${p.isAddition ? "+" : "-"}</span>
+                ${createFractionHTML(p.w2, p.n2, p.den)}
+                <span>=</span>
+                <span class="text-gray-300">?</span>
+            `;
+			}
+
+			function renderVisuals() {
+				visualContainer.innerHTML = "";
+				const p = currentProblem;
+
+				// Render first number
+				const group1 = document.createElement("div");
+				group1.className =
+					"flex flex-wrap justify-center items-center gap-1 border-2 border-dashed border-orange-200 p-2 rounded-lg";
+
+				// Whole parts
+				for (let i = 0; i < p.w1; i++) {
+					group1.appendChild(createSVG(p.den, p.den, "fill-orange-400"));
+				}
+				// Fraction part
+				group1.appendChild(createSVG(p.den, p.n1, "fill-orange-500"));
+
+				visualContainer.appendChild(group1);
+
+				// Operator icon
+				const op = document.createElement("div");
+				op.className = "text-3xl flex items-center font-bold text-orange-300";
+				op.innerText = p.isAddition ? "➕" : "➖";
+				visualContainer.appendChild(op);
+
+				// Render second number
+				const group2 = document.createElement("div");
+				group2.className =
+					"flex flex-wrap justify-center items-center gap-1 border-2 border-dashed border-blue-100 p-2 rounded-lg";
+				for (let i = 0; i < p.w2; i++) {
+					group2.appendChild(createSVG(p.den, p.den, "fill-blue-400"));
+				}
+				group2.appendChild(createSVG(p.den, p.n2, "fill-blue-500"));
+
+				visualContainer.appendChild(group2);
+			}
+
+			function createSVG(total, active, colorClass) {
+				const size = 50;
+				const radius = 20;
+				const cx = size / 2;
+				const cy = size / 2;
+				const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+				svg.setAttribute("width", size);
+				svg.setAttribute("height", size);
+				svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+
+				// Background circle
+				const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+				bg.setAttribute("cx", cx);
+				bg.setAttribute("cy", cy);
+				bg.setAttribute("r", radius);
+				bg.setAttribute("fill", "#edf2f7");
+				svg.appendChild(bg);
+
+				// Slices
+				for (let i = 0; i < total; i++) {
+					const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+					const startAngle = (i * 360) / total;
+					const endAngle = ((i + 1) * 360) / total;
+
+					const x1 = cx + radius * Math.cos((Math.PI * (startAngle - 90)) / 180);
+					const y1 = cy + radius * Math.sin((Math.PI * (startAngle - 90)) / 180);
+					const x2 = cx + radius * Math.cos((Math.PI * (endAngle - 90)) / 180);
+					const y2 = cy + radius * Math.sin((Math.PI * (endAngle - 90)) / 180);
+
+					const largeArcFlag = 0;
+					const d = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+					path.setAttribute("d", d);
+					path.setAttribute("class", i < active ? colorClass : "fill-gray-200");
+					path.setAttribute("stroke", "white");
+					path.setAttribute("stroke-width", "1");
+					svg.appendChild(path);
+				}
+
+				return svg;
+			}
+
+			function clearInputs() {
+				inputs.whole.value = "";
+				inputs.num.value = "";
+				inputs.den.value = "";
+				inputs.whole.focus();
+			}
+
+			function checkAnswer() {
+				const userW = parseInt(inputs.whole.value) || 0;
+				const userN = parseInt(inputs.num.value) || 0;
+				const userD = parseInt(inputs.den.value) || 1;
+
+				const p = currentProblem;
+				let correctW, correctN;
+
+				// Simplified calculation
+				if (p.isAddition) {
+					let totalN = p.n1 + p.n2;
+					let extraW = Math.floor(totalN / p.den);
+					correctW = p.w1 + p.w2 + extraW;
+					correctN = totalN % p.den;
+				} else {
+					let n1 = p.n1;
+					let w1 = p.w1;
+					if (p.n1 < p.n2) {
+						n1 += p.den;
+						w1 -= 1;
+					}
+					correctW = w1 - p.w2;
+					correctN = n1 - p.n2;
+				}
+
+				// Normalization check (if fraction is 0/den)
+				const isCorrect =
+					(userW === correctW && userN === correctN && (correctN === 0 || userD === p.den)) ||
+					(correctN === 0 && userW === correctW && userN === 0);
+
+				if (isCorrect) {
+					score += 10;
+					scoreBadge.innerText = `Зібрано зірок: ${score}`;
+					showSuccess();
+				} else {
+					showFailure(correctW, correctN, p.den);
+				}
+			}
+
+			function showSuccess() {
+				successModal.classList.remove("hidden");
+				const msgs = ["Справжня магія!", "Шеф-кухар у захваті!", "Це дуже смачно!", "Математичний талант!"];
+				document.getElementById("success-msg").innerText = msgs[Math.floor(Math.random() * msgs.length)];
+			}
+
+			function showFailure(w, n, d) {
+				feedback.classList.remove("hidden", "bg-green-100", "text-green-800");
+				feedback.classList.add("bg-red-100", "text-red-800");
+				feedback.innerText = "Спробуй ще раз! Десь у рецепті помилка. 🤔";
+
+				explanation.classList.remove("hidden");
+				let hint = "";
+				const p = currentProblem;
+
+				if (p.isAddition) {
+					hint = `💡 **Підказка:** Додай окремо цілі частини (${p.w1} + ${p.w2} = ${p.w1 + p.w2}) та дроби (${p.n1}/${p.den} + ${p.n2}/${p.den} = ${p.n1 + p.n2}/${p.den}).`;
+					if (p.n1 + p.n2 >= p.den) {
+						hint += ` Оскільки чисельник більший за знаменник, виділи цілу частину!`;
+					}
+				} else {
+					if (p.n1 < p.n2) {
+						hint = `💡 **Підказка:** Оскільки ${p.n1} < ${p.n2}, треба "позичити" одиницю у цілої частини ${p.w1}. 
+                    Тоді ${p.w1} і ${p.n1}/${p.den} перетвориться на ${p.w1 - 1} і ${p.n1 + p.den}/${p.den}.`;
+					} else {
+						hint = `💡 **Підказка:** Відніми цілі частини (${p.w1} - ${p.w2}) та дроби окремо.`;
+					}
+				}
+				explanation.innerHTML = hint;
+			}
+
+			checkBtn.addEventListener("click", checkAnswer);
+			nextBtn.addEventListener("click", () => {
+				successModal.classList.add("hidden");
+				generateProblem();
+			});
+
+			// Allow 'Enter' key to check
+			window.addEventListener("keypress", (e) => {
+				if (e.key === "Enter") {
+					if (!successModal.classList.contains("hidden")) {
+						nextBtn.click();
+					} else {
+						checkBtn.click();
+					}
+				}
+			});
+
+			// Start game
+			window.onload = generateProblem;
+		</script>
+	</body>
+</html>
